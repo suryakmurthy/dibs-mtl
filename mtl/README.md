@@ -14,7 +14,6 @@ conda install pyg -c pyg -c conda-forge
 Install the repo:
 
 ```bash
-git clone https://github.com/suryakmurthy/dibs-mtl.git
 cd dibs-mtl
 pip install -e .
 ```
