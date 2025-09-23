@@ -1266,18 +1266,7 @@ class DiBSMTL(WeightMethod):
         step_size: float = 1e-2,
     ) -> List[torch.Tensor]:
         # Compute per-task gradients (list of lists of tensors)
-        # print(id(shared_parameters[0]))  # inside dibs_update
-        # per_task_grads = {}
-        # for i, loss in enumerate(losses):
-        #     g = list(
-        #         torch.autograd.grad(
-        #             loss,
-        #             shared_parameters,
-        #             retain_graph=True,
-        #         )
-        #     )
-        #     grad = torch.cat([torch.flatten(grad) for grad in g])
-        #     per_task_grads[i] = grad
+
         per_task_grads = [
             torch.autograd.grad(loss, shared_parameters, retain_graph=True)
             for loss in losses
@@ -1350,7 +1339,6 @@ class DiBSMTL(WeightMethod):
         ])  # Shape: (n_tasks, total_param_dim)
         # Normalize each gradient vector
         norms = flat_grads.norm(p=2, dim=1, keepdim=True)
-        # print(f"Unit grads shape: {unit_grads.shape}")
         # Compute preferred states (scaled negative unit gradients)
         weights = (step_size * radius) / norms  # shape: (n_tasks, 1)
         self.weight_list.append(weights.detach().cpu().numpy())
@@ -1469,14 +1457,10 @@ class DiBSMTL_Multi_Step(WeightMethod):
     ) -> Tuple[torch.Tensor, None]:
         # Compute beta values from dibs update (list of tensors, each (n_tasks,))
         beta_values = self.dibs_update(losses, shared_parameters, radius, max_steps, step_size)
-        # print(f"Beta values over {max_steps} steps: ", beta_values)
-        # Sum beta values over steps to get a (n_tasks,) vector
+
         beta_sum = torch.stack(beta_values).sum(dim=0)
-        # print("Beta sum: ", beta_sum)
-        # print("Checking MS Loss function: ", beta_sum, radius, max_steps, step_size)
-        # print("Beta sum: ", beta_values)
-        # time.sleep(15)
-        weights = beta_sum # / (beta_sum.sum() + 1e-10)  # Shape: (n_tasks,)
+
+        weights = beta_sum # Shape: (n_tasks,)
 
         # Weighted sum of losses
         weighted_loss = sum([
