@@ -1,8 +1,10 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 """`Experiment` class manages the lifecycle of a multi-task model."""
 
+import random
 import time
 from typing import Dict, List, Tuple
+import torch
 
 import hydra
 import numpy as np
@@ -126,7 +128,11 @@ class Experiment(experiment.Experiment):
 
     def run(self):
         """Run the experiment."""
+        SEED = self.config.setup.seed
         exp_config = self.config.experiment
+        self.action_space.seed(SEED)
+
+
 
         vec_env = self.envs["train"]
 
