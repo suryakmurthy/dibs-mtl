@@ -40,11 +40,10 @@ Here `<experiment name>` is one of `[toy, nyuv2]`. You can also replace `nashmtl
 | PCGrad (`pcgrad`) | [Gradient Surgery for Multi-Task Learning](https://arxiv.org/abs/2001.06782) |
 | IMTL-G (`imtl`) | [Towards Impartial Multi-task Learning](https://openreview.net/forum?id=IMPnRXEWpvr) |
 | MGDA (`mgda`) | [Multi-Task Learning as Multi-Objective Optimization](https://arxiv.org/abs/1810.04650) |
-| DWA (`dwa`) | [End-to-End Multi-Task Learning with Attention](https://arxiv.org/abs/1803.10704) |
 | Uncertainty weighting (`uw`) | [Multi-Task Learning Using Uncertainty to Weigh Losses for Scene Geometry and Semantics](https://arxiv.org/pdf/1705.07115v3.pdf) |
 | Linear scalarization (`ls`) | - (equal weighting) |
-| Scale-invariant baseline (`scaleinvls`) | - (see Nash-MTL paper for details) |
-| Random Loss Weighting (`rlw`) | [A Closer Look at Loss Weighting in Multi-Task Learning](https://arxiv.org/pdf/2111.10603.pdf) |
+
+Finally, if you would like to include a transform in the toy example, please use the --transform arguement when running trainer.py
 
 Following NashMTL, this code supports experiment tracking with **[Weights & Biases](https://wandb.ai/site)** with two additional parameters:
 
