@@ -85,3 +85,19 @@ If you use MTRL in your research, please cite it using the following BibTeX entr
    # From the repo root
    bash run_{method}.sh
    ```
+
+6. **Toggle Transforms**
+
+To enable or disable task transformations, update the `transform_flag` parameter in these files:
+
+- `mtrl/config/experiment/metaworld.yaml`  
+- `mtrl/tests/experiment/utils.py`
+
+Currently, the only included transform is an **exponential transformation applied to the Window-Open task**.  
+You can inspect or modify the transform implementation in:
+
+- `mtrl/mtrl/env/vec_env_transformed.py`  
+  (additional transformation equations are listed in the comments)
+
+After editing the `transform_flag`, re-run your experiment to apply the new transform settings.
+
