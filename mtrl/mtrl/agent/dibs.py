@@ -171,7 +171,7 @@ class Agent(grad_manipulation_agent.Agent):
             dim=0,
         )  # num_tasks x dim
         norms = grad_vec.norm(p=2, dim=1, keepdim=True) + 1e-10
-        unit_grads = grad_vec / grad_vec.norm(p=2, dim=1, keepdim=True) + 1e-10
+        unit_grads = grad_vec / norms + 1e-10
         preferred_states = self.radius * unit_grads  # (n_tasks, total_param_dim)
         beta_values = []
         # Initialize delta_theta
