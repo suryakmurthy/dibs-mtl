@@ -72,11 +72,20 @@ delta_stats = [
     "<30",
 ]
 BASE = np.array(
-    [0.3830, 0.6376, 0.6754, 0.2780, 25.01, 19.21, 0.3014, 0.5720, 0.6915]
-)  # base results from CAGrad
+    [0.4116, 0.657, 0.6074, 0.24, 24.49, 18.24, 0.3192, 0.5916, 0.7056]
+)  # base results of STL
 SIGN = np.array([1, 1, 0, 0, 0, 0, 1, 1, 1])
 KK = np.ones(9) * -1
 
 
 def delta_fn(a):
     return (KK ** SIGN * (a - BASE) / BASE).mean() * 100.0  # * 100 for percentage
+
+
+M_NUM = np.array([[0, 2], [2, 4], [4, 9]])
+
+
+def stl_eval_mean(a, main_task):
+    a = KK ** SIGN * a
+    eval_values = np.array([a[bound[0]: bound[1]].mean() for bound in M_NUM])
+    return eval_values[main_task]

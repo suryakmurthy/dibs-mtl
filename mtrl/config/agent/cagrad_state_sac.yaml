@@ -23,6 +23,6 @@ builder:
     critic_tau: 0.005
     critic_target_update_freq: 1
     encoder_tau: 0.05
-    cagrad_method: "exact"
+    cagrad_method: "cagrad_fast2"
     cagrad_c: 0.5
   multitask_cfg: ${agent.multitask}

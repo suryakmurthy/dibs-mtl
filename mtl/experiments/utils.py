@@ -7,7 +7,7 @@ from pathlib import Path
 import numpy as np
 import torch
 
-from methods import METHODS
+from methods import LOSS_METHODS, GRADIENT_METHODS
 
 
 def str_to_list(string):
@@ -34,10 +34,21 @@ def str2bool(v):
 
 common_parser = argparse.ArgumentParser(add_help=False)
 common_parser.add_argument("--data-path", type=Path, help="path to data")
-common_parser.add_argument("--n-epochs", type=int, default=300)
-common_parser.add_argument("--batch-size", type=int, default=120, help="batch size")
+common_parser.add_argument("--n-epochs", type=int, default=500)
+common_parser.add_argument("--batch-size", type=int, default=2, help="batch size")
 common_parser.add_argument(
-    "--method", type=str, choices=list(METHODS.keys()), help="MTL weight method"
+    "--loss_method",
+    type=str,
+    choices=list(LOSS_METHODS.keys()),
+    default="ls",
+    help="MTL loss weight method"
+)
+common_parser.add_argument(
+    "--gradient_method",
+    type=str,
+    choices=list(GRADIENT_METHODS.keys()),
+    default="ls",
+    help="MTL gradient weight method"
 )
 common_parser.add_argument("--lr", type=float, default=1e-3, help="learning rate")
 common_parser.add_argument(
@@ -68,12 +79,33 @@ common_parser.add_argument(
 # cagrad
 common_parser.add_argument("--c", type=float, default=0.4, help="c for CAGrad alg.")
 # dwa
-# dwa
 common_parser.add_argument(
     "--dwa-temp",
     type=float,
     default=2.0,
     help="Temperature hyper-parameter for DWA. Default to 2 like in the original paper.",
+)
+
+# igbv1 and igbv2
+common_parser.add_argument(
+    "--base_epoch",
+    type=int,
+    default=1,
+    help="Set which epoch's average losses as base_losses for fw or fwlog",
+)
+
+# igbv2
+common_parser.add_argument(
+    "--sac_lr",
+    type=float,
+    default=3e-4,
+    help="learning rate of sac in igbv2",
+)
+common_parser.add_argument(
+    "--buffer_size",
+    type=float,
+    default=1e4,
+    help="max replay buffer size in igbv2",
 )
 
 
@@ -97,11 +129,10 @@ def set_seed(seed):
     random.seed(seed)
 
     torch.manual_seed(seed)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed(seed)
-        torch.cuda.manual_seed_all(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
 
-    torch.backends.cudnn.enabled = True
+    torch.backends.cudnn.enabled = False
     torch.backends.cudnn.benchmark = False
     torch.backends.cudnn.deterministic = True
 
@@ -123,6 +154,7 @@ def extract_weight_method_parameters_from_args(args):
             stl=dict(main_task=args.main_task),
             cagrad=dict(c=args.c),
             dwa=dict(temp=args.dwa_temp),
+            igbv2=dict(sac_lr=args.sac_lr, buffer_size=int(args.buffer_size)),
         )
     )
     return weight_methods_parameters

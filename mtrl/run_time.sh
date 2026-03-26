@@ -1,0 +1,19 @@
+mkdir -p ./trainlogs
+
+#### MT10 ####
+
+
+wlr=0.025
+seed=5 # Make sure to set a valid seed value
+gamma=0.01
+wlr=0.025
+start_time=$(date +%s)
+export CUDA_VISIBLE_DEVICES=7 && python -u main.py setup=metaworld env=metaworld-mt10 agent=famo_state_sac experiment.num_eval_episodes=1 experiment.num_train_steps=3000 setup.seed=$seed replay_buffer.batch_size=1280 agent.multitask.num_envs=10 agent.multitask.should_use_disentangled_alpha=False agent.multitask.should_use_task_encoder=False agent.multitask.actor_cfg.should_condition_encoder_on_task_info=False agent.multitask.actor_cfg.should_concatenate_task_info_with_encoder=False agent.encoder.type_to_select=identity agent.builder.gamma=$gamma agent.builder.w_lr=$wlr > trainlogs/mt10_famo_gamma$gamma\_wlr$wlr\_sd$seed.log 2>&1
+end_time=$(date +%s)
+duration=$((end_time - start_time))
+echo "Duration of famo:    ${duration}s"
+start_time=$(date +%s)
+export CUDA_VISIBLE_DEVICES=7 && python -u main.py setup=metaworld env=metaworld-mt10 agent=dibs_state_sac experiment.num_eval_episodes=1 experiment.num_train_steps=3000 setup.seed=$seed replay_buffer.batch_size=1280 agent.multitask.num_envs=10 agent.multitask.should_use_disentangled_alpha=False agent.multitask.should_use_task_encoder=False agent.multitask.actor_cfg.should_condition_encoder_on_task_info=False agent.multitask.actor_cfg.should_concatenate_task_info_with_encoder=False agent.encoder.type_to_select=identity agent.builder.radius=$wlr > trainlogs/mt10_dibs\_radius$wlr\_sd$seed.log 2>&1
+end_time=$(date +%s)
+duration=$((end_time - start_time))
+echo "Duration of dibsmtl:    ${duration}s"

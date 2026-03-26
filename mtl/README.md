@@ -1,82 +1,78 @@
 # DiBS-MTL
 
-This repository contains the MTL experiments used in **"DiBS-MTL: Transformation-Invariant Multitask Learning with Direction Oracles".**
+Code used for the multi-task learning results for _*Monotonic Transformation Invariant Multi-task Learning*_. This codebase is built on the repository released by the authors of *Improvable Gap Balancing for Multi-Task Learning*.
 
 ## Setup environment
 
 ```bash
-conda create -n mtl python=3.9.23
+conda create -n mtl python=3.8.13
 conda activate mtl
-conda install pytorch==1.9.0 torchvision==0.10.0 cudatoolkit=10.2 -c pytorch
-conda install pyg -c pyg -c conda-forge
+python -m pip install torch==1.12.1+cu113 torchvision==0.13.1+cu113 -f https://download.pytorch.org/whl/cu113/torch_stable.html
 ```
 
 Install the repo:
 
 ```bash
-cd dibs-mtl
-pip install -e .
+cd mtl
+pip install -r requirements.txt
 ```
 
 ## Run experiment
 
-To run experiments:
+Follow instruction in the experiment README file for more information regarding, e.g., datasets.
+
+We support our IGB methods and other existing MTL methods with a unified API. To run experiments:
 
 ```bash
-cd experiment/<experiment name>
-python trainer.py --method=dibsmtl
+cd experiments/<experiment name>
+python trainer.py --loss_method=<loss balancing method> --gradient_method=<gradient balancing method>
 ```
+  
+Here,
+- `<experiment name>` is one of `[toy, cityscapes, quantum_chemistry, nyuv2]`.
+- `<loss balancing method>` is one of `igbv1`, `igbv2` and the following loss balancing MTL methods.
+- `<gradient balancing method>` is one of the following gradient balancing MTL methods.
+- Both `<loss balancing method>` and `<gradient balancing method>` are optional:
+  - only using `<loss balancing method>` is to run a loss balancing method;
+  - only using `<gradient balancing method>` is to run a gradient balancing method;
+  - using neither is to run Equal Weighting (EW) method.
+  - using both is to run a combined MTL method by both loss balancing and gradient balancing.
 
-Follow instructions in the experiment README file for more information regarding datasets.  
+## MTL methods
 
-Here `<experiment name>` is one of `[toy, nyuv2]`. You can also replace `nashmtl` with one of the following MTL methods.
+We support the following loss balancing and gradient balancing methods. This repository has been updated to include additional baselines beyond the original implementation.
 
-| Method (code name) | Paper (notes) |
-| :---: | :---: |
-| DiBS-MTL (`dibsmtl`) | [TBD](TBD) |
-| Nash-MTL (`nashmtl`) | [Multi-Task Learning as a Bargaining Game](https://arxiv.org/pdf/2202.01017v1.pdf) |
-| FAMO (`famo`) | [FAMO: Fast Adaptive Multitask Optimization](https://arxiv.org/abs/2306.03792) |
-| CAGrad (`cagrad`) | [Conflict-Averse Gradient Descent for Multi-task Learning](https://arxiv.org/pdf/2110.14048.pdf) |
-| PCGrad (`pcgrad`) | [Gradient Surgery for Multi-Task Learning](https://arxiv.org/abs/2001.06782) |
-| IMTL-G (`imtl`) | [Towards Impartial Multi-task Learning](https://openreview.net/forum?id=IMPnRXEWpvr) |
-| MGDA (`mgda`) | [Multi-Task Learning as Multi-Objective Optimization](https://arxiv.org/abs/1810.04650) |
-| Uncertainty weighting (`uw`) | [Multi-Task Learning Using Uncertainty to Weigh Losses for Scene Geometry and Semantics](https://arxiv.org/pdf/1705.07115v3.pdf) |
-| Linear scalarization (`ls`) | - (equal weighting) |
 
-Finally, if you would like to include a transform in the toy example, please use the --transform arguement when running trainer.py
+|   Loss Balancing Method (code name)   |                                                          Paper (notes)                                                           |
+|:-------------------------------------:|:--------------------------------------------------------------------------------------------------------------------------------:|
+|        Equal Weighting (`ls`)         |                                                     - (linear scalarization)                                                     |
+|     Random Loss Weighting (`rlw`)     |                  [A Closer Look at Loss Weighting in Multi-Task Learning](https://arxiv.org/pdf/2111.10603.pdf)                  |
+|    Dynamic Weight Average (`dwa`)     |                        [End-to-End Multi-Task Learning with Attention](https://arxiv.org/abs/1803.10704)                         |
+|     Uncertainty Weighting (`uw`)      | [Multi-Task Learning Using Uncertainty to Weigh Losses for Scene Geometry and Semantics](https://arxiv.org/pdf/1705.07115v3.pdf) |
+| Improvable Gap Balancing v1 (`igbv1`) |                                                     [Improvable Gap Balancing for Multi-Task Learning](https://arxiv.org/pdf/2307.15429)                                                     |
+| Improvable Gap Balancing v2 (`igbv2`) |                                                    [Improvable Gap Balancing for Multi-Task Learning](https://arxiv.org/pdf/2307.15429)                                                     |
 
-Following NashMTL, this code supports experiment tracking with **[Weights & Biases](https://wandb.ai/site)** with two additional parameters:
 
-```bash
-python trainer.py --method=nashmtl --wandb_project=<project-name> --wandb_entity=<entity-name>
-```
+| Gradient Balancing Method (code name) |                                          Paper (notes)                                           |
+|:-------------------------------------:|:------------------------------------------------------------------------------------------------:|
+|             MGDA (`mgda`)             |     [Multi-Task Learning as Multi-Objective Optimization](https://arxiv.org/abs/1810.04650)      |
+|           PCGrad (`pcgrad`)           |           [Gradient Surgery for Multi-Task Learning](https://arxiv.org/abs/2001.06782)           |
+|           CAGrad (`cagrad`)           | [Conflict-Averse Gradient Descent for Multi-task Learning](https://arxiv.org/pdf/2110.14048.pdf) |
+|            IMTL-G (`imtl`)            |       [Towards Impartial Multi-task Learning](https://openreview.net/forum?id=IMPnRXEWpvr)       |
+|         Nash-MTL (`nashmtl`)          |        [Multi-Task Learning as a Bargaining Game](https://arxiv.org/pdf/2202.01017v1.pdf)        |
+|         FairGrad (`fairgrad`)          |        [FairGrad: Fairness Aware Gradient Descent](https://arxiv.org/pdf/2206.10923)        |
+|         GradNorm (`gradnorm`)          |        [GradNorm: Gradient Normalization for Adaptive Loss Balancing in Deep Multitask Networks](https://arxiv.org/pdf/1711.02257)        |
+|         FAMO (`famo`)          |        [FAMO: Fast Adaptive Multitask Optimization](https://arxiv.org/pdf/2306.03792) |
+|         DiBS-MTL (`dibsmtl`)          |        (1-Step DiBS-MTL)        |
+|         Multi-Step DiBS-MTL (`multi_step_dibsmtl`)          |        (T-Step DiBS-MTL)        |
 
-## Citation
 
-This repository was built on the Nash-MTL and FAMO repositories. If you wish to cite this repository, please cite the following:
+## Acknowledgements / Attribution
 
-```bibtex
-@article{liu2021conflict,
-  title={Conflict-Averse Gradient Descent for Multi-task Learning},
-  author={Liu, Bo and Liu, Xingchao and Jin, Xiaojie and Stone, Peter and Liu, Qiang},
-  journal={Advances in Neural Information Processing Systems},
-  volume={34},
-  year={2021}
-}
+This codebase is built on top of the implementation from:
 
-@article{navon2022multi,
-  title={Multi-Task Learning as a Bargaining Game},
-  author={Navon, Aviv and Shamsian, Aviv and Achituve, Idan and Maron, Haggai and Kawaguchi, Kenji and Chechik, Gal and Fetaya, Ethan},
-  journal={arXiv preprint arXiv:2202.01017},
-  year={2022}
-}
+- Yanqi Dai, Nanyi Fei, and Zhiwu Lu. *Improvable Gap Balancing for Multi-Task Learning.*  
+  In **Uncertainty in Artificial Intelligence (UAI)**, PMLR, 2023.  
+  Repository: https://github.com/YanqiDai/IGB4MTL
 
-@misc{liu2023famo,
-  title={FAMO: Fast Adaptive Multitask Optimization},
-  author={Bo Liu and Yihao Feng and Peter Stone and Qiang Liu},
-  year={2023},
-  eprint={2306.03792},
-  archivePrefix={arXiv},
-  primaryClass={cs.LG}
-}
-```
+We retain the original experiment structure and extend it with additional benchmarks (cityscapes, QM9) and baselines (FAMO, FairGrad, GradNorm) in addition to the DiBS-MTL methods. If you use this repository, please also cite the original IGB work (in addition to citing our paper).

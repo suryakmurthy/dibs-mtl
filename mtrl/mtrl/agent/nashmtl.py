@@ -96,6 +96,7 @@ class Agent(grad_manipulation_agent.Agent):
         should_complete_init: bool = True,
         update_weights_every: int = 1,
     ):
+        print("update_weights_every:", update_weights_every)
         """NashMTL algorithm."""
         agent_cfg_copy = deepcopy(agent_cfg)
         OmegaConf.set_struct(agent_cfg_copy, False)

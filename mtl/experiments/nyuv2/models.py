@@ -7,7 +7,6 @@ import torch.nn.functional as F
 
 class _SegNet(nn.Module):
     """SegNet MTAN"""
-
     def __init__(self):
         super(_SegNet, self).__init__()
         # initialise network parameters

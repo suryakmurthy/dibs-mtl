@@ -105,7 +105,7 @@ class MetaWorldVecEnv(AsyncVectorEnv):
         env_obs, reward, done, info = super().step(actions)
         # reward[0] = np.sign(reward[0]) * (reward[0]**4)  # Transforming reach
         # reward[7] = np.sign(5 + reward[7]) * ((5 + reward[7])**4)  # Transforming peg insert
-        reward[8] = np.exp(reward[8]) # Transforming window opening
+        # reward[8] = np.exp(reward[8]) # Transforming window opening
         return self.create_multitask_obs(env_obs=env_obs), reward, done, info
 
     def create_multitask_obs(self, env_obs):

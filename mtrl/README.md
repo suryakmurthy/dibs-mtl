@@ -9,7 +9,7 @@
 ---
 
 ## Overview  
-This repository contains the MTRL experiments used in **"DiBS-MTL: Transformation-Invariant Multitask Learning with Direction Oracles".**
+This repository contains the MTRL experiments used in **"Monotonic Transformation Invariant Multi-task Learning."**
 
 This codebase builds on the [MTRL Repository](https://github.com/facebookresearch/mtrl).  
 Our experiments are performed on [MetaWorld Benchmarks](https://github.com/Farama-Foundation/Metaworld).
