@@ -404,14 +404,14 @@ class DiBSMTL_Multi_Step(WeightMethod):
         ] = None,
         representation: Union[List[torch.nn.parameter.Parameter], torch.Tensor] = None,
         learning_rate = 1e-3,
-        step_size: float = 1e-2,
+        step_size: float = 1e-5,
         **kwargs,
     ) -> Tuple[Union[torch.Tensor, None], Union[Dict, None]]:
         loss, extra_outputs = self.get_weighted_loss(
             losses=losses,
             shared_parameters=shared_parameters,
             radius = learning_rate,
-            step_size = step_size,
+            step_size = learning_rate / 5,
             **kwargs,
         )
         # print("DiBS-MTL Multi-Step backwards: ", losses, step_size, learning_rate, loss)
