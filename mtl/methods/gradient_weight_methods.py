@@ -376,6 +376,7 @@ class DiBSMTL_Multi_Step(WeightMethod):
         max_steps: int = 5,
         step_size: float = 1e-2,
     ) -> Tuple[torch.Tensor, None]:
+        # print(max_steps, step_size, radius)
         # Compute beta values from dibs update (list of tensors, each (n_tasks,))
         beta_values = self.dibs_update(losses, shared_parameters, radius, max_steps, step_size)
 
@@ -1087,6 +1088,148 @@ class DBMTL(WeightMethod):
             torch.nn.utils.clip_grad_norm_(shared_parameters, self.max_norm)
 
         return loss, extra_outputs
+    
+class ConsMTL(WeightMethod):
+    def __init__(self, n_tasks, device: torch.device, max_norm=1.0, lambda_=1):
+        super().__init__(n_tasks, device=device)
+        self.max_norm = max_norm
+        self.lambda_ = lambda_
+        print(self.lambda_)
+
+    def get_weighted_loss(
+        self,
+        losses,
+        shared_parameters,
+        task_specific_parameters,
+        last_shared_parameters,
+        representation,
+        **kwargs,
+    ):
+        """
+        Parameters
+        ----------
+        losses :
+        shared_parameters : shared parameters
+        kwargs :
+        Returns
+        -------
+        """
+        # NOTE: we allow only shared params for now. Need to see paper for other options.
+        grad_dims = []
+
+        # for nyuv2 and cityscapes
+        z_list = representation
+
+        # for qm9 and celeba
+        # repeat representation n_tasks times
+        # z_list = [representation for _ in range(self.n_tasks)]
+
+        for param in shared_parameters:
+            grad_dims.append(param.data.numel())
+        grads = torch.Tensor(sum(grad_dims), self.n_tasks).to(self.device)
+        
+        # calculate delta_i = ∂l_i/∂z_i
+        delta_is = []
+        grad_list = []
+        for l_i, z_i in zip(losses, z_list):
+            delta_i = torch.autograd.grad(l_i, z_i, retain_graph=True, create_graph=True)[0]
+            flattened_shared_grad = torch.cat([g.view(-1) for g in delta_i])
+            grad_list.append(flattened_shared_grad)
+            delta_is.append(delta_i)
+
+        num_tasks = len(losses)  
+        params_per_task = len(task_specific_parameters) // num_tasks 
+
+        for i in range(self.n_tasks):
+            l_i = losses[i]
+
+            shared_grads = torch.autograd.grad(l_i, shared_parameters, retain_graph=True)
+            self.grad2vec(shared_grads, grads, grad_dims, i)
+
+        GG = grads.t().mm(grads).cpu()  # [num_tasks, num_tasks]
+        x_start = np.ones(self.n_tasks) / self.n_tasks
+        A = GG.data.cpu().numpy()
+        def objfn(x):
+            return np.dot(A, x) - np.power(1 / x, 0.5)
+
+        res = least_squares(objfn, x_start, bounds=(0, np.inf))
+        w_cpu = res.x
+        ww = torch.Tensor(w_cpu).to(grads.device)
+        g = (grads * ww.view(1, -1)).sum(1)
+        GTG = GG.data.cpu().numpy()
+
+        delta = sum([delta_i * w_cpu[i] for i, delta_i in enumerate(delta_is)]).detach()
+        self.overwrite_grad(shared_parameters, g, grad_dims)
+
+        for i in range(self.n_tasks):
+            l_i = losses[i]
+            delta_i = delta_is[i]
+            z_i = z_list[i]
+
+            theta_i = task_specific_parameters[i * params_per_task : (i + 1) * params_per_task]
+
+            L_extra_i = -self.lambda_ * torch.dot(delta_i.view(-1), delta.view(-1))
+
+            g1 = torch.autograd.grad(l_i, theta_i, retain_graph=True)
+            g2 = torch.autograd.grad(L_extra_i, theta_i, retain_graph=True)
+            norm1 = torch.norm(torch.cat([torch.flatten(g) for g in g1]))
+            for p, g in zip(theta_i, g2):
+                p.grad = g
+            torch.nn.utils.clip_grad_norm_(theta_i, 0.1 *norm1)
+            for p, g in zip(theta_i, g1):
+                p.grad += g
+
+        return GTG, w_cpu
+
+
+    @staticmethod
+    def grad2vec(shared_grads, grads, grad_dims, task):
+        # store the gradients
+        grads[:, task].fill_(0.0)
+        cnt = 0
+        # for mm in m.shared_modules():
+        #     for p in mm.parameters():
+
+        for grad in shared_grads:
+            if grad is not None:
+                grad_cur = grad.data.detach().clone()
+                beg = 0 if cnt == 0 else sum(grad_dims[:cnt])
+                en = sum(grad_dims[: cnt + 1])
+                grads[beg:en, task].copy_(grad_cur.data.view(-1))
+            cnt += 1
+
+    def overwrite_grad(self, shared_parameters, newgrad, grad_dims):
+        newgrad = newgrad * self.n_tasks  # to match the sum loss
+        cnt = 0
+
+        # for mm in m.shared_modules():
+        #     for param in mm.parameters():
+        for param in shared_parameters:
+            beg = 0 if cnt == 0 else sum(grad_dims[:cnt])
+            en = sum(grad_dims[: cnt + 1])
+            this_grad = newgrad[beg:en].contiguous().view(param.data.size())
+            param.grad = this_grad.data.clone()
+            cnt += 1
+
+    def backward(
+        self,
+        losses: torch.Tensor,
+        parameters: Union[List[torch.nn.parameter.Parameter], torch.Tensor] = None,
+        shared_parameters: Union[
+            List[torch.nn.parameter.Parameter], torch.Tensor
+        ] = None,
+        task_specific_parameters: Union[
+            List[torch.nn.parameter.Parameter], torch.Tensor
+        ] = None,
+        last_shared_parameters=None,
+        representation=None,
+        **kwargs,
+    ):
+        GTG, w= self.get_weighted_loss(losses, shared_parameters, task_specific_parameters, last_shared_parameters, representation, **kwargs)
+        if self.max_norm > 0:
+            torch.nn.utils.clip_grad_norm_(shared_parameters, self.max_norm)
+        return None, {"GTG": GTG, "weights": w}  # NOTE: to align with all other weight methods
+
 
 class GradientWeightMethods:
     def __init__(self, method: str, n_tasks: int, device: torch.device, **kwargs):
@@ -1124,4 +1267,6 @@ GRADIENT_METHODS = dict(
     dibsmtl_multi_step=DiBSMTL_Multi_Step,
     famo=FAMO,
     fairgrad=FairGrad,
-    gradnorm=GradNorm,)
+    gradnorm=GradNorm,
+    consmtl=ConsMTL,
+)
